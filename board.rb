@@ -1,3 +1,4 @@
+require 'pstore'
 require 'display_table'
 
 class Board
@@ -10,9 +11,28 @@ class Board
   end
   
   def self.load name
-    board = Board.new name
-    File.read(name+".txt").each {|line| board << Card.from_s(line)}
+    board = Board.new name 
+    board.load
     board
+  end
+
+  def persist
+    store = PStore.new(filename)
+    store.transaction do
+      store[:allcards] = Array.new
+      @cards.each{|card| store[:allcards] << card}
+    end
+  end
+
+  def load
+    store = PStore.new(filename)
+    store.transaction do
+      @cards = store[:allcards]
+    end
+  end
+
+  def filename
+    "#{@name}.store"
   end
 
   def << card
@@ -25,10 +45,6 @@ class Board
 
   def move card, column
     card.state = column
-  end
-
-  def persist
-    File.open(@name+".txt", 'w') {|file| file.write to_s}
   end
 
   def states 
